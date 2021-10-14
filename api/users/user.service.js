@@ -92,7 +92,7 @@ module.exports = {
                 if (isMatch) {
                   let currentData = results[0];
                   currentData.password = data.body.password
-                    ? generateHashedPassword(data.password)
+                    ? generateHashedPassword(data.body.password)
                     : currentData.password;
                   currentData.first_name = data.body.first_name
                     ? data.body.first_name

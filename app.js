@@ -8,6 +8,6 @@ app.use(express.json());
 
 app.use("/v1/user", userRouter);
 
-app.listen(process.env.APP_PORT, () => {
-  console.log("Server up and running at : ", process.env.APP_PORT);
+app.listen(3000, () => {
+  console.log("Server up and running at : ", 3000);
 });

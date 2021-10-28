@@ -1,12 +1,24 @@
 const { create, getUser, updateUser } = require("./user.service");
 const { genSaltSync, hashSync, compareSync } = require("bcrypt");
+const bcrypt = require("bcrypt");
 const crypto = require("crypto");
+
 const {
   validateEmail,
   checkForStrongPassword,
   generateHashedPassword,
 } = require("../../helpers/helper");
+
+const { s3_bucket } = require("../../config.json");
+
 var auth = require("basic-auth");
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
+const fs = require("fs");
+
+var AWS = require("aws-sdk");
+AWS.config.update({ region: "us-east-1" });
+s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
 module.exports = {
   //createUser controller
@@ -117,5 +129,172 @@ module.exports = {
         return res.status(204).send();
       });
     }
+  },
+  uploadFile: async (req, res) => {
+    buf = Buffer.from(
+      req.body.contents.replace(/^data:image\/\w+;base64,/, ""),
+      "base64"
+    );
+    var username = req.username;
+    var password = req.password;
+    let id = crypto.randomBytes(16).toString("hex");
+    let today = new Date();
+    pool.query(
+      "SELECT * FROM user WHERE username = ?",
+      [username],
+      async function (error, results, fields) {
+        if (error) {
+          res.status(400).send({
+            failed: "error occurred",
+            error: error,
+          });
+        } else {
+          if (results.length > 0) {
+            const comparison = await bcrypt.compare(
+              password,
+              results[0].password
+            );
+            if (comparison) {
+              var data = {
+                Bucket: s3_bucket,
+                Key: req.body.filename,
+                Body: buf,
+                ContentEncoding: "base64",
+                ContentType: "image/png",
+              };
+              s3.upload(data, function (err, data) {
+                if (err) {
+                  console.log(err);
+                  console.log("Error uploading data: ", data);
+                } else {
+                  console.log("successfully uploaded the image!");
+                  pool.query(
+                    "INSERT INTO image(file_name,id,url,upload_date,user_id) VALUES(?,?,?,?,?)",
+                    [data.key, id, data.Location, today, results[0].id],
+                    async function (error, results1, fields) {
+                      if (error) {
+                        res.status(400).send({
+                          failed: "Image upload unsuccessful",
+                        });
+                      } else {
+                        res.status(201).send({
+                          success: "Image Uploaded Successfully",
+                          file_name: data.Key,
+                          id: id,
+                          url: data.Location,
+                          upload_date: today,
+                          user_id: results[0].id,
+                        });
+                      }
+                    }
+                  );
+                }
+              });
+            } else {
+              res.status(403).send({
+                error: "Email and password does not match",
+              });
+            }
+          } else {
+            res.status(404).send({
+              error: "Email does not exist",
+            });
+          }
+        }
+      }
+    );
+  },
+  getFile: async (req, res) => {
+    var username = req.username;
+    var password = req.password;
+
+    pool.query(
+      "SELECT * FROM user u left join image i on u.id = i.user_id WHERE username = ?",
+      [username],
+      async function (error, results, fields) {
+        if (error) {
+          res.status(400).send({
+            failed: "error occurred",
+            error: error,
+          });
+        } else {
+          if (results.length > 0) {
+            const comparison = await bcrypt.compare(
+              password,
+              results[0].password
+            );
+            if (comparison) {
+              var params = { Bucket: s3_bucket, Key: results[0].file_name };
+              s3.getObject(params, function (err, data) {
+                if (err) {
+                  res.status(404).send({
+                    error: "Image Not Found",
+                  });
+                }
+                res.status(201).send({
+                  success: "Image Retrieved Successfully",
+                  file_name: results[0].Key,
+                  id: results[0].user_id,
+                  url: results[0].Location,
+                  upload_date: results[0].upload_date,
+                  user_id: results[0].id,
+                });
+              });
+            } else {
+              res.status(403).send({
+                error: "Email and password does not match",
+              });
+            }
+          } else {
+            res.status(404).send({
+              error: "Email does not exist",
+            });
+          }
+        }
+      }
+    );
+  },
+  deleteFile: async (req, res) => {
+    var username = req.username;
+    var password = req.password;
+
+    pool.query(
+      "SELECT * FROM user u left join image i on u.id = i.user_id WHERE username = ?",
+      [username],
+      async function (error, results, fields) {
+        if (error) {
+          res.status(400).send({
+            failed: "error occurred",
+            error: error,
+          });
+        } else {
+          if (results.length > 0) {
+            const comparison = await bcrypt.compare(
+              password,
+              results[0].password
+            );
+            if (comparison) {
+              var params = { Bucket: s3_bucket, Key: results[0].file_name };
+              s3.deleteObject(params, function (err, data) {
+                if (err) {
+                  res.status(404).send({
+                    error: "Image Not Found",
+                  });
+                }
+                res.status(204).send();
+              });
+            } else {
+              res.status(403).send({
+                error: "Email and password does not match",
+              });
+            }
+          } else {
+            res.status(404).send({
+              error: "Email does not exist",
+            });
+          }
+        }
+      }
+    );
   },
 };

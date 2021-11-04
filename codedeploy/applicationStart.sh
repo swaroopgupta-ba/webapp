@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cd /home/ubuntu/webapp
-sudo nohup node server.js >> debug.log 2>&1 &
+sudo nohup node app.js >> debug.log 2>&1 &

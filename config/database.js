@@ -9,7 +9,7 @@ const {
 
 const pool = createPool({
   port: db_port,
-  host: db_host,
+  host: db_host.split(":")[0],
   user: db_user,
   password: db_password,
   database: default_database,
@@ -22,14 +22,28 @@ var user_creation =
 var image_creation =
   "CREATE TABLE IF NOT EXISTS `csye6225`.`image` ( `id` VARCHAR(45) NOT NULL, `file_name` VARCHAR(45) NOT NULL, `url` VARCHAR(100) NOT NULL, `upload_date` VARCHAR(50) NOT NULL, `user_id` VARCHAR(150) NOT NULL , PRIMARY KEY (`id`), FOREIGN KEY (`user_id`) REFERENCES user(`id`) );";
 
-pool.query(user_creation, function (err, result) {
-  if (err) throw err;
-  console.log("User Table created");
-});
-
-pool.query(image_creation, function (err, result) {
-  if (err) throw err;
-  console.log("Image Table created");
+pool.query("show tables", function (err, result) {
+  if (err) {
+    console.log("error in showing tables");
+    throw err;
+  } else {
+    console.log("tables :", result);
+    pool.query(user_creation, function (err, result) {
+      if (err) {
+        console.log("error in creating user table");
+        throw err;
+      } else {
+        console.log("User Table created");
+        pool.query(image_creation, function (err, result) {
+          if (err) {
+            console.log("error in creating user table");
+            throw err;
+          }
+          console.log("Image Table created");
+        });
+      }
+    });
+  }
 });
 
 module.exports = pool;

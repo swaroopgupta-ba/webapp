@@ -30,7 +30,7 @@ module.exports = {
   //createUser controller
   createUser: (req, res) => {
     const newUser = req.body;
-
+    logger.info("create user api called");
     if (!newUser.username) {
       return res.status(400).json({
         message: "Username cannot be left blank",
@@ -77,13 +77,14 @@ module.exports = {
           });
         }
       }
+      logger.info("created new user successfully");
       return res.status(201).send(results);
     });
   },
   getUser: async (req, res) => {
     const username = req.username;
     const password = req.password;
-
+    logger.info("get user api called");
     await getUser(username, password, (err, results) => {
       if (err) {
         return res.status(401).json({
@@ -97,10 +98,12 @@ module.exports = {
           resolution: "Enter valid Authentication Header",
         });
       }
+      logger.info("user details fetched successfully");
       return res.send(results);
     });
   },
   updateUser: async (req, res) => {
+    logger.info("update user api called");
     if (
       "id" in req.body ||
       "username" in req.body ||
@@ -132,11 +135,13 @@ module.exports = {
             resolution: "Enter valid Authentication Header",
           });
         }
+        logger.info("updated user details successfully");
         return res.status(204).send();
       });
     }
   },
   uploadFile: async (req, res) => {
+    logger.info("upload file api called");
     buf = Buffer.from(
       req.body.contents.replace(/^data:image\/\w+;base64,/, ""),
       "base64"
@@ -223,6 +228,7 @@ module.exports = {
                             failed: "New Image upload unsuccessful",
                           });
                         } else {
+                          logger.info("added user profile pic successfully");
                           res.status(201).send({
                             success: "Image Uploaded Successfully",
                             file_name: data.Key,

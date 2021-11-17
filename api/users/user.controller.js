@@ -21,6 +21,11 @@ var AWS = require("aws-sdk");
 AWS.config.update({ region: "us-east-1" });
 s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
+const log = require("../logs");
+const logger = log.getLogger("logs");
+var SDC = require("statsd-client"),
+  sdc = new SDC({ port: 8125 });
+
 module.exports = {
   //createUser controller
   createUser: (req, res) => {

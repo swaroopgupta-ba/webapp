@@ -31,6 +31,10 @@ module.exports = {
   createUser: (req, res) => {
     const newUser = req.body;
     logger.info("create user api called");
+    sdc.increment("User.createUser");
+    let timer = new Date();
+    let db_timer = new Date();
+
     if (!newUser.username) {
       return res.status(400).json({
         message: "Username cannot be left blank",
@@ -78,6 +82,7 @@ module.exports = {
         }
       }
       logger.info("created new user successfully");
+      sdc.timing("User.createUser", db_timer);
       return res.status(201).send(results);
     });
   },
@@ -85,6 +90,9 @@ module.exports = {
     const username = req.username;
     const password = req.password;
     logger.info("get user api called");
+    sdc.increment("User.getUser");
+    let timer = new Date();
+    let db_timer = new Date();
     await getUser(username, password, (err, results) => {
       if (err) {
         return res.status(401).json({
@@ -99,11 +107,13 @@ module.exports = {
         });
       }
       logger.info("user details fetched successfully");
+      sdc.timing("User.getUser", db_timer);
       return res.send(results);
     });
   },
   updateUser: async (req, res) => {
     logger.info("update user api called");
+    sdc.timing("User.updateUser", db_timer);
     if (
       "id" in req.body ||
       "username" in req.body ||
@@ -136,6 +146,7 @@ module.exports = {
           });
         }
         logger.info("updated user details successfully");
+        sdc.timing("User.updateUser", db_timer);
         return res.status(204).send();
       });
     }

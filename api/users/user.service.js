@@ -38,8 +38,6 @@ module.exports = {
       `select * from user where username = ?`,
       [username],
       (error, results, fields) => {
-        console.log("Service 41 error: ", error);
-        console.log("Service 42 results: ", results);
         if (error) {
           return callBack(error);
         } else {
@@ -48,8 +46,7 @@ module.exports = {
               password,
               results[0].password,
               function (err, isMatch) {
-                console.log("Service 42 err: ", err);
-                if (isMatch) {
+                if (isMatch && results[0].verified) {
                   let {
                     id,
                     first_name,
@@ -96,7 +93,7 @@ module.exports = {
               data.password,
               results[0].password,
               function (err, isMatch) {
-                if (isMatch) {
+                if (isMatch && results[0].verified) {
                   let currentData = results[0];
                   currentData.password = data.body.password
                     ? generateHashedPassword(data.body.password)

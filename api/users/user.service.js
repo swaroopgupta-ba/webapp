@@ -38,6 +38,8 @@ module.exports = {
       `select * from user where username = ?`,
       [username],
       (error, results, fields) => {
+        console.log("Service 41 error: ", error);
+        console.log("Service 42 results: ", results);
         if (error) {
           return callBack(error);
         } else {
@@ -46,6 +48,7 @@ module.exports = {
               password,
               results[0].password,
               function (err, isMatch) {
+                console.log("Service 42 err: ", err);
                 if (isMatch) {
                   let {
                     id,

@@ -1,4 +1,4 @@
-const pool = require("../../config/database");
+const { pool, rep_pool } = require("../../config/database");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const { generateHashedPassword } = require("../../helpers/helper");
@@ -34,7 +34,7 @@ module.exports = {
     );
   },
   getUser: (username, password, callBack) => {
-    pool.query(
+    rep_pool.query(
       `select * from user where username = ?`,
       [username],
       (error, results, fields) => {
@@ -54,6 +54,8 @@ module.exports = {
                     username,
                     account_created,
                     account_updated,
+                    verified,
+                    verified_on,
                   } = results[0];
 
                   return callBack(null, {
@@ -63,6 +65,8 @@ module.exports = {
                     username,
                     account_created,
                     account_updated,
+                    verified,
+                    verified_on,
                   });
                 } else {
                   return callBack(new Error("Authentication error"));

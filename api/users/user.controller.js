@@ -2,7 +2,7 @@ const { create, getUser, updateUser } = require("./user.service");
 const { genSaltSync, hashSync, compareSync } = require("bcrypt");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const pool = require("../../config/database");
+const { pool, rep_pool } = require("../../config/database");
 
 const {
   validateEmail,
@@ -118,11 +118,13 @@ module.exports = {
       "id" in req.body ||
       "username" in req.body ||
       "account_created" in req.body ||
-      "account_updated" in req.body
+      "account_updated" in req.body ||
+      "verified" in req.body ||
+      "verified_on" in req.body
     ) {
       return res.status(403).json({
         message:
-          "User forbidden from updating id or username or account_created or account_updated fields",
+          "User forbidden from updating id or username or account_created or account_updated or verified or verified_on fields",
         resolution: "Updatable fields are first_name, last_name, password",
       });
     } else {
@@ -163,7 +165,7 @@ module.exports = {
     let today = new Date();
     let s3_file_name = req.username + "-" + req.body.filename;
     pool.query(
-      "SELECT u.id, u.password, i.file_name FROM user u left join image i on u.id = i.user_id WHERE username = ?",
+      "SELECT u.id, u.password, u.verified, i.file_name FROM user u left join image i on u.id = i.user_id WHERE username = ?",
       [username],
       async function (error, results, fields) {
         if (error) {
@@ -177,7 +179,7 @@ module.exports = {
               password,
               results[0].password
             );
-            if (comparison) {
+            if (comparison & results[0].verified) {
               var upload_data = {
                 Bucket: s3_bucket,
                 Key: s3_file_name,
@@ -271,7 +273,7 @@ module.exports = {
   getFile: async (req, res) => {
     var username = req.username;
     var password = req.password;
-    pool.query(
+    rep_pool.query(
       "SELECT * FROM user u left join image i on u.id = i.user_id WHERE username = ?",
       [username],
       async function (error, results, fields) {
@@ -286,7 +288,7 @@ module.exports = {
               password,
               results[0].password
             );
-            if (comparison) {
+            if (comparison & results[0].verified) {
               var params = { Bucket: s3_bucket, Key: results[0].file_name };
               s3.getObject(params, function (err, data) {
                 if (err) {
@@ -336,7 +338,7 @@ module.exports = {
               password,
               results[0].password
             );
-            if (comparison) {
+            if (comparison & results[0].verified) {
               var params = { Bucket: s3_bucket, Key: results[0].file_name };
               s3.deleteObject(params, function (err, data) {
                 if (err) {

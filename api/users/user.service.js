@@ -2,6 +2,8 @@ const { pool, rep_pool } = require("../../config/database");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const { generateHashedPassword } = require("../../helpers/helper");
+var AWS = require("aws-sdk");
+AWS.config.update({ region: "us-east-1" });
 
 module.exports = {
   create: (data, callBack) => {
@@ -22,6 +24,60 @@ module.exports = {
         if (error) {
           return callBack(error);
         }
+
+        var dynamoClient = new AWS.DynamoDB.DocumentClient();
+        var table = "dynamo";
+        var expires = new Date();
+        expires.setTime(expires.getTime() + 60 * 5 * 1000);
+
+        var tokenParams = {
+          TableName: table,
+          Item: {
+            id: req.body.username,
+            token: Math.random().toString(36).substr(2, 5),
+            expiryDate: Math.floor((new Date().getTime() + 5 * 60000) / 1000),
+          },
+        };
+
+        docClient.put(tokenParams, function (err, data) {
+          if (err) {
+            logger.error(
+              "Error in adding item in dynamoDB:",
+              JSON.stringify(err, null, 2)
+            );
+            console.error(
+              "Error in adding item in dynamoDB:",
+              JSON.stringify(err, null, 2)
+            );
+          } else {
+            logger.info(
+              "Added item in dynamoDB:",
+              JSON.stringify(data, null, 2)
+            );
+          }
+        });
+
+        var params = {
+          Name: data.first_name,
+          Message: data.username,
+          TopicArn: SNS_TOPIC_ARN,
+        };
+
+        var publishSNSPromise = new AWS.SNS({ apiVersion: "2010-03-31" })
+          .publish(params)
+          .promise();
+
+        publishSNSPromise
+          .then(function (promiseResults) {
+            console.log(
+              `Message ${params.Message} sent to the topic ${params.TopicArn}`
+            );
+            console.log("MessageID is " + promiseResults.MessageId);
+          })
+          .catch(function (err) {
+            console.error(err, err.stack);
+          });
+
         return callBack(null, {
           id: data.id,
           first_name: data.first_name,
@@ -29,6 +85,8 @@ module.exports = {
           username: data.username,
           account_created: data.account_created,
           account_updated: data.account_updated,
+          verified: data.verified,
+          verified_on: data.verified_on,
         });
       }
     );

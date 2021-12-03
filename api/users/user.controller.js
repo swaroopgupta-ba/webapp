@@ -377,4 +377,56 @@ module.exports = {
       }
     );
   },
+  verifyUser: (req, res) => {
+    var query = require("url").parse(req.url, true).query;
+    var email = query.email;
+    var token = query.token;
+
+    logger.info("Verify Token em", email);
+    logger.info("Verify Token tk", token);
+
+    var DynamoDB_client = new AWS.DynamoDB({ apiVersion: "2012-08-10" });
+
+    if (email == undefined || token == undefined) {
+      logger.info("Invalid Email or token");
+      return;
+    }
+
+    let queryParams = {
+      TableName: "dynamo",
+      Key: {
+        id: { S: email },
+      },
+    };
+
+    DynamoDB_client.getItem(queryParams, (err, data) => {
+      if (err) {
+        logger.info("err", err);
+      } else {
+        var retrieved_token = Object.values(data.Item.token)[0];
+        if (token === retrieved_token) {
+          if (Math.floor(Date.now() / 1000) > data.Item.expiryDate.N) {
+            logger.info("Token expired :(");
+            return res.status(400).send("Token Expired :(");
+          }
+          logger.info("Email Verification Success");
+          User.updateStatus(email, (err1, newValue) => {
+            if (err1) {
+              logger.error("Verification Failed");
+
+              res.status(403).send({
+                message: "Verification failed",
+              });
+            } else {
+              logger.info("User Verification Success");
+
+              return res.status(200).send("User Successfully Verified");
+            }
+          });
+        } else {
+          return res.status(400).send("Token invalid");
+        }
+      }
+    });
+  },
 };

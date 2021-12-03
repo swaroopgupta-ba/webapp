@@ -33,7 +33,7 @@ module.exports = {
         var tokenParams = {
           TableName: table,
           Item: {
-            id: req.body.username,
+            id: data.username,
             token: Math.random().toString(36).substr(2, 5),
             expiryDate: Math.floor((new Date().getTime() + 5 * 60000) / 1000),
           },

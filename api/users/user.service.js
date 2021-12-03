@@ -39,7 +39,7 @@ module.exports = {
           },
         };
 
-        docClient.put(tokenParams, function (err, data) {
+        dynamoClient.put(tokenParams, function (err, data) {
           if (err) {
             logger.error(
               "Error in adding item in dynamoDB:",

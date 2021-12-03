@@ -12,7 +12,7 @@ const router = require("express").Router();
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 
-router.post("/user/", createUser);
+router.post("/user", createUser);
 router
   .get("/user/self", basicAuth, getUser)
   .put("/self", basicAuth, updateUser);

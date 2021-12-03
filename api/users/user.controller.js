@@ -382,8 +382,8 @@ module.exports = {
     var email = query.email;
     var token = query.token;
 
-    logger.info("Verify Token em", email);
-    logger.info("Verify Token tk", token);
+    logger.info("email", email);
+    logger.info("Token ", token);
 
     var DynamoDB_client = new AWS.DynamoDB({ apiVersion: "2012-08-10" });
 
@@ -410,19 +410,19 @@ module.exports = {
             return res.status(400).send("Token Expired :(");
           }
           logger.info("Email Verification Success");
-          User.updateStatus(email, (err1, newValue) => {
-            if (err1) {
-              logger.error("Verification Failed");
 
-              res.status(403).send({
-                message: "Verification failed",
-              });
-            } else {
-              logger.info("User Verification Success");
-
+          pool.query(
+            `update user set verified = true, verified_on = ? where username = ?`,
+            [new Date(), email],
+            (error, results, fields) => {
+              if (error) {
+                res.status(403).send({
+                  message: "Verification failed",
+                });
+              }
               return res.status(200).send("User Successfully Verified");
             }
-          });
+          );
         } else {
           return res.status(400).send("Token invalid");
         }

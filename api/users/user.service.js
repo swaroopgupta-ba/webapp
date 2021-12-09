@@ -4,6 +4,9 @@ const bcrypt = require("bcrypt");
 const { generateHashedPassword } = require("../../helpers/helper");
 var AWS = require("aws-sdk");
 AWS.config.update({ region: "us-east-1" });
+const { SNS_TOPIC_ARN } = require("../../config.json");
+const log = require("../../logs");
+const logger = log.getLogger("logs");
 
 module.exports = {
   create: (data, callBack) => {
@@ -26,14 +29,14 @@ module.exports = {
         }
 
         var dynamoClient = new AWS.DynamoDB.DocumentClient();
-        var table = "dynamo";
+        var table = "DynamoDB-terraform";
         var expires = new Date();
         expires.setTime(expires.getTime() + 60 * 5 * 1000);
 
         var tokenParams = {
           TableName: table,
           Item: {
-            id: data.username,
+            userid: data.username,
             token: Math.random().toString(36).substr(2, 5),
             expiryDate: Math.floor((new Date().getTime() + 5 * 60000) / 1000),
           },
@@ -58,7 +61,6 @@ module.exports = {
         });
 
         var params = {
-          Name: data.first_name,
           Message: data.username,
           TopicArn: SNS_TOPIC_ARN,
         };

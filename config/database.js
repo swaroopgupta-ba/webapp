@@ -14,7 +14,8 @@ const pool = createPool({
   user: db_user,
   password: db_password,
   database: default_database,
-  connectionLimit: 10, // default value
+  connectionLimit: 10, // default value,
+  ssl: "Amazon RDS",
 });
 
 var user_creation =
@@ -54,6 +55,7 @@ const rep_pool = createPool({
   password: db_password,
   database: default_database,
   connectionLimit: 10, // default value
+  ssl: "Amazon RDS",
 });
 
 module.exports = { pool, rep_pool };

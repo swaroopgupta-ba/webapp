@@ -1,37 +1,28 @@
 const { create, getUser, updateUser } = require("./user.service");
-const { genSaltSync, hashSync, compareSync } = require("bcrypt");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { pool, rep_pool } = require("../../config/database");
-
 const {
   validateEmail,
   checkForStrongPassword,
   generateHashedPassword,
 } = require("../../helpers/helper");
-
 const { s3_bucket } = require("../../config.json");
-
-var auth = require("basic-auth");
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
-const fs = require("fs");
-
-var AWS = require("aws-sdk");
-AWS.config.update({ region: "us-east-1" });
-s3 = new AWS.S3({ apiVersion: "2006-03-01" });
-
 const log = require("../../logs");
 const logger = log.getLogger("logs");
 var SDC = require("statsd-client"),
   sdc = new SDC({ port: 8125 });
 
+var AWS = require("aws-sdk");
+AWS.config.update({ region: "us-east-1" });
+s3 = new AWS.S3({ apiVersion: "2006-03-01" });
+
 module.exports = {
   //createUser controller
   createUser: (req, res) => {
     const newUser = req.body;
-    logger.info("create user api called");
-    sdc.increment("User.createUser");
+    logger.info("Log in create user controller");
+    sdc.increment("createUserController");
     let timer = new Date();
     let db_timer = new Date();
 
@@ -81,16 +72,16 @@ module.exports = {
           });
         }
       }
-      logger.info("created new user successfully");
-      sdc.timing("User.createUser", db_timer);
+      sdc.timing("createUserController", db_timer);
+      logger.info("New user created");
       return res.status(201).send(results);
     });
   },
   getUser: async (req, res) => {
     const username = req.username;
     const password = req.password;
-    logger.info("get user api called");
-    sdc.increment("User.getUser");
+    logger.info("Log in getUser controller");
+    sdc.increment("getUserController");
     let timer = new Date();
     let db_timer = new Date();
     await getUser(username, password, (err, results) => {
@@ -106,14 +97,14 @@ module.exports = {
           resolution: "Enter valid Authentication Header",
         });
       }
-      logger.info("user details fetched successfully");
-      sdc.timing("User.getUser", db_timer);
+      logger.info("Get User success");
+      sdc.timing("getUserController", db_timer);
       return res.send(results);
     });
   },
   updateUser: async (req, res) => {
-    logger.info("update user api called");
-    sdc.timing("User.updateUser", db_timer);
+    logger.info("Log in  updateUser Controller");
+    sdc.timing("updateUseController", db_timer);
     if (
       "id" in req.body ||
       "username" in req.body ||
@@ -147,14 +138,14 @@ module.exports = {
             resolution: "Enter valid Authentication Header",
           });
         }
-        logger.info("updated user details successfully");
-        sdc.timing("User.updateUser", db_timer);
+        logger.info("User details updated");
+        sdc.timing("updateUserController", db_timer);
         return res.status(204).send();
       });
     }
   },
   uploadFile: async (req, res) => {
-    logger.info("upload file api called");
+    logger.info("Log in uploadFile Controller");
     buf = Buffer.from(
       req.body.contents.replace(/^data:image\/\w+;base64,/, ""),
       "base64"
@@ -377,13 +368,10 @@ module.exports = {
       }
     );
   },
-  verifyUser: (req, res) => {
+  userVerification: (req, res) => {
     var query = require("url").parse(req.url, true).query;
     var email = query.email;
     var token = query.token;
-
-    logger.info("email", email);
-    logger.info("Token ", token);
 
     var DynamoDB_client = new AWS.DynamoDB({ apiVersion: "2012-08-10" });
 
@@ -393,9 +381,9 @@ module.exports = {
     }
 
     let queryParams = {
-      TableName: "dynamo",
+      TableName: "DynamoDB-terraform",
       Key: {
-        id: { S: email },
+        userid: { S: email },
       },
     };
 

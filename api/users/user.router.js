@@ -19,6 +19,6 @@ router
 router.post("/user/self/pic", basicAuth, uploadFile);
 router.get("/user/self/pic", basicAuth, getFile);
 router.delete("/user/self/pic", basicAuth, deleteFile);
-router.get("/verifyUserEmail", verifyUser);
+router.get("/userVerification", verifyUser);
 
 module.exports = router;
